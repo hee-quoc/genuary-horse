@@ -9,7 +9,7 @@ let revealSpeed = 0.01;
 
 let fileInput;
 let stepSlider, brightnessSlider, speedSlider;
-let resetBtn, playBtn;
+let playBtn;
 let recordBtn, stopBtn;
 let modeLabel;
 let isVideoPlaying = true;
@@ -22,18 +22,29 @@ const UI_WIDTH = 240;
 /* ================= SETUP ================= */
 
 function setup() {
-  createCanvas(600, 600);
+  let c = createCanvas(windowWidth, windowHeight);
+  c.parent(document.body);
+
   pixelDensity(2);
   background(0);
 
+  // Force full black background
+  document.body.style.margin = "0";
+  document.body.style.overflow = "hidden";
+  document.body.style.background = "#000";
+
   createUI();
 
-  // default video
+  // Default video
   vid = createVideo("Mascot_Horse_Running_Video_Generated.mp4", () => {
     vid.loop();
     vid.hide();
     modeLabel.html("Mode: Video (default)");
   });
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
 }
 
 /* ================= UI ================= */
@@ -50,8 +61,9 @@ function createUI() {
   panel.style("border-radius", "8px");
   panel.style("color", "#fff");
   panel.style("font-family", "monospace");
+  panel.style("z-index", "10");
 
-  createP("GENUARY - STICHES HORSE | HEE").parent(panel);
+  createP("GENUARY – STITCHES HORSE | HEE").parent(panel);
 
   fileInput = createFileInput(handleFile);
   fileInput.attribute("accept", "image/*,video/mp4");
@@ -147,7 +159,9 @@ function draw() {
 
   if (img) {
     push();
-    translate((width - img.width) / 2, (height - img.height) / 2);
+    let offsetX = (width - img.width) / 2;
+    let offsetY = (height - img.height) / 2;
+    translate(offsetX, offsetY);
     drawImageReveal();
     pop();
   }
@@ -157,11 +171,15 @@ function draw() {
   }
 }
 
+/* ================= IMAGE REVEAL ================= */
+
 function drawImageReveal() {
   let count = floor(map(reveal, 0, 1, 0, stitches.length));
   for (let i = 0; i < count; i++) drawStitch(stitches[i]);
   reveal = constrain(reveal + revealSpeed, 0, 1);
 }
+
+/* ================= VIDEO STITCH ================= */
 
 function drawVideoStitch() {
   vid.loadPixels();
@@ -169,11 +187,17 @@ function drawVideoStitch() {
 
   let vw = vid.width;
   let vh = vid.height;
-  let s = height / vh;
+
+  let scaleFactor = min(width / vw, height / vh);
+  let drawW = vw * scaleFactor;
+  let drawH = vh * scaleFactor;
+
+  let offsetX = (width - drawW) / 2;
+  let offsetY = (height - drawH) / 2;
 
   push();
-  translate((width - vw * s) / 2, 0);
-  scale(s);
+  translate(offsetX, offsetY);
+  scale(scaleFactor);
 
   for (let y = 0; y < vh; y += step) {
     for (let x = 0; x < vw; x += step) {
@@ -188,6 +212,7 @@ function drawVideoStitch() {
       }
     }
   }
+
   pop();
 }
 
@@ -210,8 +235,6 @@ function startRecording() {
 
   mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
   mediaRecorder.start();
-
-  console.log("Recording started");
 }
 
 function stopRecording() {
@@ -223,13 +246,11 @@ function stopRecording() {
 
     let a = document.createElement("a");
     a.href = url;
-    a.download = "stitch-export.webm";
+    a.download = "stitches-export.webm";
     a.click();
 
     URL.revokeObjectURL(url);
   };
-
-  console.log("Recording stopped");
 }
 
 /* ================= CONTROLS ================= */
